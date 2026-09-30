@@ -47,59 +47,44 @@ A user provides a natural language query describing a thrift fashion item they a
 
 ## Tool Inventory
 
-<!-- Four lines per tool. This is worth 2 points and it's the single most
-     common place students lose them.
-
-     "Returns a list" earns NOTHING. The description has to say what is IN
-     the list.
-
-     The empty case isn't optional either — it's the thing your loop branches
-     on, and if you don't decide it here you'll discover it as a crash in
-     Milestone 5. -->
-
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Searches thrift catalog listings filtered by optional size and price ceiling, ranking matching items by keyword overlap with the description.
+- **Inputs:** `description` (str) — search keywords describing desired piece; `size` (str | None) — size filter matched case-insensitively with boundary/token safety (e.g. 'M' matches 'M' or 'S/M', not 'US 9' or 'XL'), or None to skip; `max_price` (float | None) — inclusive price ceiling, or None to skip.
+- **Returns:** A list of at most 10 matching listing dicts sorted by keyword relevance descending, where each dict has `id` (str), `title` (str), `description` (str), `category` (str), `style_tags` (list[str]), `size` (str), `condition` (str), `price` (float), `colors` (list[str]), `brand` (str | None), and `platform` (str).
+- **When it has nothing:** An empty list `[]` (not `None`, and does not raise an exception).
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Generates 1–2 outfit ideas styling the thrifted find either with compatible pieces from the user's wardrobe or with general styling advice if no wardrobe is provided.
+- **Inputs:** `new_item` (dict) — a listing dict for the thrifted item with `title`, `category`, `style_tags`, `colors`, etc.; `wardrobe` (dict) — a wardrobe dict containing an `'items'` key holding a list of wardrobe item dicts (`id`, `name`, `category`, `colors`, `style_tags`, `notes`).
+- **Returns:** A non-empty string (`str`) describing 1–2 complete outfit combinations that explicitly name pieces from the user's wardrobe and explain why they work together.
+- **When it has nothing:** A non-empty string (`str`) containing general styling ideas, silhouette pairings, and aesthetic advice for `new_item` when `wardrobe['items']` is empty (never returns `""` and never raises an exception).
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Generates a short, engaging 2–4 sentence social-media-ready caption highlighting the find, styling vibe, price, and platform.
+- **Inputs:** `outfit` (str) — outfit suggestion text from `suggest_outfit`; `new_item` (dict) — listing dict containing `title`, `price` (float), `platform` (str), `category`, and style details.
+- **Returns:** A 2–4 sentence caption string (`str`) written in an authentic social posting tone mentioning the item, its price, its platform, and the outfit vibe.
+- **When it has nothing:** A fallback caption string (`str`) describing the item, platform, and price directly when `outfit` is empty or whitespace-only (never returns `""` and never raises an exception).
 
 ---
 
 ## Planning Loop
 
-<!-- Your branch rule, stated as a rule — the condition AND both paths — plus
-     the file and function that holds it.
-
-     Like this:
-       "If search_listings returns an empty list, put a message in the session
-        and stop. Otherwise take the first result and go to suggest_outfit."
-        — agent.py::run_agent
-
-     The grader checks your code against what you claim here, so the file and
-     function have to be real. -->
-
-**Branch rule:**
+**Branch rule:** If `search_listings` returns an empty list `[]`, put an actionable message in `session["error"]` explaining what criteria the user could adjust (such as raising the price ceiling or broadening search terms) and stop the loop immediately without calling `suggest_outfit` or `create_fit_card`. Otherwise, select the first result (`session["search_results"][0]`), store it in `session["selected_item"]`, and proceed to call `suggest_outfit`.
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** Regular expressions (regex) and token parsing to extract price ceilings (e.g. `under $30`, `<$30`), size specifications (e.g. `size M`, `size 8`), and clean the remaining tokens as the item description.
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:**
+1. `session["query"]` (str) and `session["wardrobe"]` (dict) initialized at loop start.
+2. `session["parsed"]` (dict: `description`, `size`, `max_price`) populated by query parser.
+3. `session["search_results"]` (list[dict]) populated by `search_listings`.
+4. Branch: if empty, set `session["error"]` (str) and return session; if non-empty, set `session["selected_item"]` (dict).
+5. `session["outfit_suggestion"]` (str) populated by `suggest_outfit(selected_item, wardrobe)`.
+6. `session["fit_card"]` (str) populated by `create_fit_card(outfit_suggestion, selected_item)`.
 
 ---
 
