@@ -25,9 +25,7 @@ Given a query that matches at least one listing, the agent completes all three
 tool calls and returns a fit card — in at least 4 of 5 tries.
 
 **Why this target:**
-<!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
-     "my search is a plain keyword match and some phrasings will miss" is a
-     real answer. -->
+Our search relies on keyword overlap and regex query parsing, which might occasionally fail to match an ambiguously phrased query, or an upstream LLM call may encounter rate-limit pacing or intermittent network latency. Expecting 4 of 5 (80%) accounts for realistic search variation and model call retries while ensuring high overall reliability.
 
 ---
 
@@ -37,64 +35,34 @@ Given a query that matches no listings, the agent stops before calling
 `suggest_outfit` and returns a message naming what to change — 5 of 5 tries.
 
 **Why this target:**
-<!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
-     about this path? -->
+Unlike natural language generation, the early-stopping branch in `agent.py::run_agent` is deterministic code logic evaluating `if not session["search_results"]`. Because there is zero model uncertainty involved in deciding whether an empty list was returned, a failure here represents a pure logic bug; hence 5 of 5 (100%) must succeed.
 
 ---
 
-## 3. Something about state
+## 3. Session state preserves selected item across tool calls
 
-<!-- YOU WRITE THIS ONE.
-
-     How would you know that the item your search found is the same item the
-     next tool received? Name something countable or observable.
-
-     This is the criterion people find hardest, because state failure doesn't
-     look like state failure — it looks like a tool problem. Something that
-     compares session["selected_item"] against what actually reached
-     suggest_outfit is the shape you're after. -->
-
-
+In 5 of 5 runs where search returns results, the item ID in `session['selected_item']['id']` matches exactly the listing ID passed as `new_item` into `suggest_outfit` and `create_fit_card`.
 
 **Why this target:**
-
-
+Session state propagation is deterministic Python dictionary assignment within process memory. Once an item is selected from `session['search_results']`, passing it into subsequent tool arguments should never drop, overwrite, or mutate the item ID, so anything less than 5 of 5 indicates a critical state management bug.
 
 ---
 
-## 4. Something about the fit card
+## 4. Fit card includes price, platform, and proper length
 
-<!-- YOU WRITE THIS ONE.
-
-     The fit card calls a model, so the same input can produce different words
-     each time. That's not a bug — it's the nature of the tool. So what would
-     make it acceptable?
-
-     Think about what you'd actually be unhappy to see. A caption that never
-     mentions the price? Two different items producing the same opening
-     sentence? A card longer than a caption anyone would post? Any of those can
-     be turned into a number. -->
-
-
+In at least 4 of 5 successful runs, the generated fit card contains both the listing's price (formatted with a dollar sign) and the platform name, and is between 2 and 4 sentences long.
 
 **Why this target:**
-
-
+`create_fit_card` calls an LLM with temperature 0.9 to generate natural, creative captions rather than rigid templates. While the prompt explicitly instructs the model to include the price, platform, and write 2–4 sentences, high-temperature generation can occasionally produce a single-sentence punchline or omit a token. Setting 4 of 5 allows for natural LLM phrasing variance while enforcing consistent quality.
 
 ---
 
-## 5. Your choice
+## 5. Search strictly respects price ceilings
 
-<!-- YOU WRITE THIS ONE TOO.
-
-     Pick something you actually care about getting right. Speed, the empty
-     wardrobe path, what happens when the model can't be reached, whether the
-     search respects a price ceiling — anything, as long as it names a number
-     or an observable outcome. -->
-
-
+Given a query specifying a maximum price ceiling, in 5 of 5 runs where an item is found, the price of `session['selected_item']['price']` is less than or equal to the specified price ceiling.
 
 **Why this target:**
+Price ceiling filtering is a strict mathematical inequality (`item['price'] <= max_price`) enforced directly in `search_listings`. Since candidate filtering does not depend on probabilistic model decisions, returning any item over the user's budget is unacceptable and must hold across 5 of 5 runs.
 
 
 
