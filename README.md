@@ -39,7 +39,7 @@
 
 ## What This Does
 
-<!-- Three or four sentences: what a user asks for, and what they get back. -->
+A user provides a natural language query describing a thrift fashion item they are looking for, optionally including size constraints and a maximum price (e.g., 'vintage graphic tee under $30, size M'), along with their current wardrobe. FitFindr parses the request, searches secondhand listings across thrift platforms, and selects the top matching piece. It then generates personalized outfit combinations styling the thrifted find with pieces from the user's existing closet, and writes an engaging, social-ready fit card caption highlighting the find, platform, price, and aesthetic. If no matching items are found, the agent stops early and advises the user on what parameters to adjust.
 
 
 
