@@ -146,24 +146,17 @@ Scored these vintage Levi's 501 jeans on depop for just $38 and I am never takin
 
 ## How I Used AI
 
-<!-- Two specific moments. What you asked, what came back, what you changed.
-
-     "I used Claude to help me code" is not enough.
-
-     "I gave Claude my search_listings spec. It returned None on no match
-     instead of an empty list, so I changed it" is the level we want. -->
-
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I asked the AI to write a size-filtering helper function for `search_listings` that determines if a requested user size matches the listing's size string.
+- *What came back:* The AI initially suggested a direct substring membership test: `target_size.lower() in item["size"].lower()`.
+- *What I changed:* I noticed this naive substring check produces critical false positives (e.g. searching for size `'s'` matches `'us 9'` shoes, and searching for `'l'` matches `'xl'` oversized items). I changed the implementation to tokenize listing size strings across delimiters (`/`, `()`, `-`), normalize prefix abbreviations (`US`, `W`), and require exact token equality in `_matches_size()`.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I asked the AI to design the generation prompt for `create_fit_card` to craft social-ready captions from the item data and styling output.
+- *What came back:* The AI generated a broad marketing prompt that produced promotional brand ad copy ("Introducing the iconic Levi 501s...") cluttered with hashtags (`#vintage #ootd`) and wrapped in quotation marks.
+- *What I changed:* I revised the prompt with strict structural rules: explicitly ban hashtags and quotation marks, mandate an authentic personal social posting voice (like an Instagram or TikTok fit check), require mentioning the platform and exact price formatted with a dollar sign, and restrict length strictly to between 2 and 4 sentences so it consistently meets our acceptance criteria.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
