@@ -47,6 +47,74 @@ def new_session(query: str, wardrobe: dict) -> dict:
     }
 
 
+import re
+
+
+def parse_query(query: str) -> dict:
+    """Extract description, size, and max_price from the user query."""
+    text = (query or "").strip()
+    max_price = None
+    size = None
+
+    # 1. Price extraction
+    price_match = re.search(
+        r"(?:under|<|below|less than|max(?:imum)?\s*(?:price)?)\s*\$?(\d+(?:\.\d+)?)",
+        text,
+        re.IGNORECASE,
+    )
+    if not price_match:
+        price_match = re.search(r"\$(\d+(?:\.\d+)?)", text)
+    if price_match:
+        max_price = float(price_match.group(1))
+        text = text[:price_match.start()] + " " + text[price_match.end():]
+
+    # 2. Size extraction
+    size_match = re.search(
+        r"(?:in\s+)?size\s+([A-Za-z0-9/]+(?:\s+[\d.]+)?(?:\s*\([^)]*\))?)",
+        text,
+        re.IGNORECASE,
+    )
+    if not size_match:
+        size_match = re.search(r"\b(W\d{2}(?:\s*L\d{2})?)\b", text, re.IGNORECASE)
+    if size_match:
+        size = size_match.group(1).strip()
+        text = text[:size_match.start()] + " " + text[size_match.end():]
+
+    # 3. Clean description
+    clean_desc = re.sub(
+        r"^(?:looking for a|looking for|find me a|find a|i want a|i need a)\s+",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    clean_desc = re.sub(r"[,;]+", " ", clean_desc)
+    clean_desc = re.sub(r"\s+", " ", clean_desc).strip()
+
+    return {
+        "description": clean_desc,
+        "size": size,
+        "max_price": max_price,
+    }
+
+
+def _format_no_results_message(parsed: dict) -> str:
+    """Build an actionable message explaining what parameters the user could change."""
+    suggestions = []
+    if parsed.get("max_price") is not None:
+        suggestions.append(f"raising your price ceiling above ${parsed['max_price']:g}")
+    if parsed.get("size"):
+        suggestions.append(f"checking adjacent sizes instead of '{parsed['size']}'")
+    suggestions.append("using broader keywords (e.g. searching for 'jacket' or 'tee' instead of specific styles)")
+
+    suggestions_str = (
+        " or ".join([", ".join(suggestions[:-1]), suggestions[-1]])
+        if len(suggestions) > 1
+        else suggestions[0]
+    )
+    item_desc = parsed.get("description") or "your search"
+    return f"No thrift listings matched '{item_desc}'. Try {suggestions_str}."
+
+
 # ── planning loop ─────────────────────────────────────────────────────────────
 
 def run_agent(query: str, wardrobe: dict) -> dict:
@@ -60,56 +128,52 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                   get_empty_wardrobe() from utils/data_loader.py.
 
     Returns:
-        The session dict. **Check session["error"] first** — if it isn't None,
+        The session dict. Check session["error"] first — if it isn't None,
         the run ended early and the later fields will still be None.
-
-    ─────────────────────────────────────────────────────────────────────────
-    TODO — build this, following the branch rule you wrote in Milestone 2.
-
-      1. Start a session with new_session().
-
-      2. Count the times round the loop, and call trace.check_iterations(count)
-         on each one before you go again. It raises when the count passes
-         MAX_ITERATIONS in config.py — see trace.py.
-
-      3. Parse the query into a description, a size, and a max_price. Regex,
-         string splitting, or asking the model are all fine — say which you
-         chose in your README. Put the result in session["parsed"].
-
-      4. Call search_listings() with what you parsed.
-         Put the results in session["search_results"].
-
-         ⚠️ THIS IS THE BRANCH. If nothing came back:
-              - put a message in session["error"] saying what the user could
-                change — "No results" is not that message
-              - return the session
-              - do NOT call suggest_outfit with nothing
-
-      5. Choose an item — the first result is fine. Put it in
-         session["selected_item"].
-
-      6. Call suggest_outfit() with the selected item and the wardrobe.
-         Put the result in session["outfit_suggestion"].
-
-      7. Call create_fit_card() with the outfit and the item.
-         Put the result in session["fit_card"].
-
-      8. Return the session.
-
-    ─────────────────────────────────────────────────────────────────────────
-    IN UNIT 4 you come back and add two things:
-
-      • Trace calls. One per step. `trace.step("search_listings", inputs=...,
-        returned=...)` — see trace.py. Your README needs the output.
-
-      • A handler for ModelUnavailable, so a bad key produces a message rather
-        than a stack trace. The import is already at the top of this file.
     """
     session = new_session(query, wardrobe)
+    iteration = 1
+    trace.check_iterations(iteration)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    # 1. Parse query
+    parsed = parse_query(session["query"])
+    session["parsed"] = parsed
+
+    # 2. Search listings using parsed inputs
+    results = search_listings(
+        description=session["parsed"].get("description", ""),
+        size=session["parsed"].get("size"),
+        max_price=session["parsed"].get("max_price"),
+    )
+    session["search_results"] = results
+
+    # 3. Branch: halt if no results found
+    if not session["search_results"]:
+        session["error"] = _format_no_results_message(session["parsed"])
+        return session
+
+    # 4. State: Select best match
+    session["selected_item"] = session["search_results"][0]
+
+    # 5. Suggest outfit based on selected item and wardrobe
+    try:
+        outfit = suggest_outfit(
+            new_item=session["selected_item"],
+            wardrobe=session["wardrobe"],
+        )
+        session["outfit_suggestion"] = outfit
+
+        # 6. Create fit card caption
+        fit_card = create_fit_card(
+            outfit=session["outfit_suggestion"],
+            new_item=session["selected_item"],
+        )
+        session["fit_card"] = fit_card
+    except ModelUnavailable as e:
+        session["error"] = f"Model unavailable: {e}"
+
     return session
+
 
 
 # ── running it directly ───────────────────────────────────────────────────────

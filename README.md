@@ -98,8 +98,23 @@ A user provides a natural language query describing a thrift fashion item they a
 **One full query**
 
 ```
-$ python app.py ask '...'
+$ python app.py ask 'vintage graphic tee under $30'
 
+  Found:    Graphic Tee — 2003 Tour Bootleg Style — $24.0 on depop
+
+  Outfit:   Hey! As your stylist, I give this graphic tee a resounding **yes**. It has that effortless, lived-in energy that instantly elevates a casual outfit. 
+
+Here are 2 distinct ways to style it using pieces already in your closet:
+
+### Look 1: 90s Streetwear Edge
+* **The Outfit:** Pair the graphic tee with your **baggy straight-leg jeans (dark wash)**, layered under the **vintage black denim jacket**, and finished with your **chunky white sneakers** and **black crossbody bag**. 
+* **Why it works:** This is all about playing with proportion and texture. The slightly boxy fit of the tee tucks seamlessly into the high-waisted, baggy dark-wash denim for that classic 90s skater silhouette. Adding the cropped black denim jacket creates a cool monochromatic top layer that contrasts with the indigo jeans, while the chunky white sneakers break up the dark tones and tie the streetwear aesthetic together.
+
+### Look 2: Grunge-Infused Contrast
+* **The Outfit:** Tuck the graphic tee into your **wide-leg khaki trousers**, cinched with the **brown leather belt**, and style it with your **black combat boots** and **black crossbody bag**. 
+* **Why it works:** This outfit leans into high-low styling by mixing grungy elements with tailored streetwear. The faded black tee and rugged combat boots bring a dark, edgy attitude that grounds the lighter, earthy khaki trousers. Using the brown leather belt adds a rich accent color that bridges the gap between the khaki pants and black accessories, while the wide-leg silhouette creates an effortlessly cool, balanced shape against the boxy top.
+
+  Fit card: Scored this unreal 2003 tour bootleg graphic tee on depop for just $24, and it instantly brings that effortless grunge energy to my closet. I love styling it with baggy dark denim and a black jacket for 90s streetwear vibes, or contrasting it with khaki trousers and combat boots. It’s got that perfect lived-in feel that makes throwing together an outfit way too easy.
 ```
 
 **The three tools, tested one at a time**
