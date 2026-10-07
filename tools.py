@@ -199,8 +199,9 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
         f"Requirements:\n"
         f"1. Write in an authentic, natural social media caption voice (like an Instagram or TikTok caption) — NOT a marketing product pitch.\n"
         f"2. Mention the item, its price ({price_str}), and the platform ({platform}) once each.\n"
-        f"3. Capture the aesthetic vibe and how it's styled.\n"
-        f"4. Length MUST be between 2 and 4 sentences. Do not use hashtags or wrapping quotation marks."
+        f"3. Explicitly name at least one specific wardrobe piece from the closet mentioned in the styling context to ground the outfit.\n"
+        f"4. Vary your sentence structure: do NOT start with formulaic openings like 'Scored this...' or 'Found this...'.\n"
+        f"5. Length MUST be between 2 and 4 sentences. Do not use hashtags or wrapping quotation marks."
     )
 
     return generate(prompt)

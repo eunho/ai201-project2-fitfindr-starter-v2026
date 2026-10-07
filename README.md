@@ -387,26 +387,27 @@ Moved `search_listings` onto FastMCP in `mcp_server.py`, exposing typed paramete
 
 ## The Improvement
 
-<!-- What you changed, why your diagnosis pointed at it, and the after-run in
-     the same table format. One change, measured properly.
-
-     `python run_eval.py --label after` -->
-
 **What I changed:**
+In `tools.py::create_fit_card`, revised the LLM prompt instructions: explicitly mandated that the fit card name at least one specific wardrobe piece from the closet mentioned in the stylist's context to ground the outfit, and instructed the model to vary its syntax and avoid repetitive, cliché openings like *"Scored this..."* or *"Found this..."*.
 
 **Which failure it was meant to fix:**
+Addressed the diagnostic weakness identified in Milestone 4 for Criterion 4: previous fit cards relied on formulaic, templated opening sentences (*"Scored this [adjective] [title] on [platform] for just $[price]..."*) and produced generic praise rather than synthesizing the specific wardrobe pieces recommended in `outfit_suggestion`.
 
 ### Run Log — After
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. A matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. An impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Session state preserves selected item across tool calls | 5 of 5 | PASS | PASS | FAIL | FAIL | PASS | MISSED (3/5) |
+| 4. Fit card includes price, platform, and proper length | 4 of 5 | PASS | PASS | PASS | PASS | FAIL | MET (4/5) |
+| 5. Search strictly respects price ceilings | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
 **Did it help, and how do I know:**
+Yes, it significantly improved caption variety and wardrobe grounding:
+1. **Opening Hook Diversity**: In the *before* run, 100% of tries opened with *"Scored this..."* or *"Found this..."*. In the *after* run, opening sentences varied across creative hooks: *"Scrolling on depop late at night finally paid off..."*, *"My Poshmark cart finally checked out..."*, *"Depop strikes again with..."*, and *"Bagged this unreal 2003 tour bootleg style graphic tee..."*.
+2. **Closet Grounding**: Every generated caption in the *after* run explicitly integrated real closet items from the user's wardrobe (`chunky white sneakers`, `wide-leg khaki trousers`, `oversized grey crewneck sweatshirt`, `baggy straight-leg jeans`).
+3. **Tradeoffs and Upstream Reality**: On Criterion 4, Try 5 wrote *"thirty bucks"* instead of formatted *"$30"*, passing 4 of 5 (meeting the 4 of 5 target). On Criterion 3, Tries 3 and 4 were interrupted by an upstream `503 UNAVAILABLE` high-demand spike from the Gemini service during live un-cached testing; our agent's `ModelUnavailable` handler caught this cleanly and halted early without crashing, transparently surfacing the 3/5 result.
 
 <!-- If it made things worse, say that. Honestly reported, that earns full
      credit and is more interesting than one that worked. -->
