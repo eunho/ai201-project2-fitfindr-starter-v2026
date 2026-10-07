@@ -135,21 +135,41 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     session = new_session(query, wardrobe)
     iteration = 1
     trace.check_iterations(iteration)
+    trace.start_trace()
 
     # 1. Parse query
     parsed = parse_query(session["query"])
     session["parsed"] = parsed
 
     # 2. Search listings using MCP tool call
-    results = call_tool(
-        "search_listings",
-        {
-            "description": session["parsed"].get("description", ""),
-            "size": session["parsed"].get("size"),
-            "max_price": session["parsed"].get("max_price"),
-        },
-    )
+    try:
+        results = call_tool(
+            "search_listings",
+            {
+                "description": session["parsed"].get("description", ""),
+                "size": session["parsed"].get("size"),
+                "max_price": session["parsed"].get("max_price"),
+            },
+        )
+    except Exception as e:
+        session["error"] = (
+            f"Search service unavailable: {e}. Please ensure the MCP search server is reachable and try again."
+        )
+        trace.step(
+            "search_listings (via MCP)",
+            inputs=session["parsed"],
+            returned=None,
+            note=f"failed: {e}",
+        )
+        return session
+
     session["search_results"] = results
+    trace.step(
+        "search_listings (via MCP)",
+        inputs=session["parsed"],
+        returned=results,
+        note="empty, stopping" if not results else "",
+    )
 
     # 3. Branch: halt if no results found
     if not session["search_results"]:
@@ -166,6 +186,14 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             wardrobe=session["wardrobe"],
         )
         session["outfit_suggestion"] = outfit
+        trace.step(
+            "suggest_outfit",
+            inputs={
+                "item": session["selected_item"].get("title"),
+                "wardrobe_items": len(session["wardrobe"].get("items", [])),
+            },
+            returned=outfit,
+        )
 
         # 6. Create fit card caption
         fit_card = create_fit_card(
@@ -173,8 +201,21 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             new_item=session["selected_item"],
         )
         session["fit_card"] = fit_card
+        trace.step(
+            "create_fit_card",
+            inputs={
+                "item": session["selected_item"].get("title"),
+                "price": session["selected_item"].get("price"),
+                "platform": session["selected_item"].get("platform"),
+            },
+            returned=fit_card,
+        )
     except ModelUnavailable as e:
         session["error"] = f"Model unavailable: {e}"
+        trace.step("model_call", inputs=None, returned=None, note=f"Model unavailable: {e}")
+    except Exception as e:
+        session["error"] = f"Styling service error: {e}. Try rephrasing your search or running again."
+        trace.step("model_call", inputs=None, returned=None, note=f"Error: {e}")
 
     return session
 
