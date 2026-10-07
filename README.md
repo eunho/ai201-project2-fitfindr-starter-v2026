@@ -300,13 +300,24 @@ All 10 search results returned had prices <= $25.0:
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | A matching query completes all three tools | 4 of 5 | MET | All 5 tries completed `search_listings (via MCP)`, `suggest_outfit`, and `create_fit_card`, returning non-empty fit card captions (5/5 exceeds 4/5 target). |
+| 2 | An impossible query stops before the second tool | 5 of 5 | MET | In all 5 tries, the empty search result triggered the branch to halt before `suggest_outfit` and set an actionable adjustment message in `session['error']` (5/5 meets 5/5 target). |
+| 3 | Session state preserves selected item across tool calls | 5 of 5 | MET | In all 5 tries, `session['selected_item']['id']` held `'lst_007'`, matching exactly the `new_item['id']` provided to `suggest_outfit` and `create_fit_card` (5/5 meets 5/5 target). |
+| 4 | Fit card includes price, platform, and proper length | 4 of 5 | MET | All 5 tries contained the dollar price (`$30`), platform (`depop`/`Depop`), and had exactly 3 sentences within the required 2–4 sentence range (5/5 exceeds 4/5 target). |
+| 5 | Search strictly respects price ceilings | 5 of 5 | MET | For a query specifying a $25 ceiling, all 5 tries selected item `lst_006` ($24.0), and all 10 items returned across every try were <= $25.0 (5/5 meets 5/5 target). |
 
 **Diagnoses**
+
+- **Pattern Analysis**: No criteria were missed across the 25 evaluation runs (all 5 criteria achieved 5/5 passes).
+  - Criteria 2, 3, and 5 evaluate deterministic Python logic (early-stopping conditional branch, in-memory session dictionary propagation, and mathematical inequality filtering `item['price'] <= max_price`). Because these execution paths involve no stochastic model decisions, 5 of 5 reliability was sustained.
+  - Criteria 1 and 4 involve generative model calls via Gemini 3.5 Flash Lite (`suggest_outfit` and `create_fit_card`). Both passed 5 of 5 times despite a relaxed target of 4 of 5. The pacing and retry logic in `generate.py` prevented transient API throttling from failing runs, and the structured constraints in `create_fit_card`'s prompt reliably forced the model to include dollar-formatted prices, platform names, and stay within the 2–4 sentence boundary.
+
+- **Honest Target Assessment**:
+  - The target of 4 of 5 for **Criterion 1** was set conservatively to buffer against network drops or rate-limit timeouts. In practice, `generate.py`'s automatic backoff makes completion 100% reliable, so Criterion 1 could fairly be set to 5 of 5.
+  - **Criterion 4** ("fit card includes price, platform, and proper length") had too lenient a target and scope. While requiring price, platform, and 2–4 sentences tested basic formatting compliance, it did not test whether the fit card actually synthesized wardrobe context from `outfit_suggestion`. The model was able to satisfy the criterion with generic styling phrasing without referencing specific closet pieces.
+
+- **Criterion to Tighten**:
+  - I would tighten **Criterion 4** to evaluate wardrobe grounding and variety: *"In at least 4 of 5 tries across different items, the fit card explicitly names at least one specific wardrobe item passed from the user's closet in `outfit_suggestion` and shares no opening sentence with prior cards."* This would test whether the model is truly contextualizing closet pieces rather than relying on formulaic opening sentences like *"Scored this [adjective] [title] on [platform] for just $[price]..."*.
 
 
 
