@@ -178,17 +178,104 @@ Scored these vintage Levi's 501 jeans on depop for just $38 and I am never takin
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. A matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. An impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Session state preserves selected item across tool calls | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card includes price, platform, and proper length | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Search strictly respects price ceilings | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
 **Real output from one try**, pasted as text, naming the file and function
 that produced it:
 
 ```
+=== Criterion 1: matching query completes all three tools (Try 1) ===
+File: agent.py :: Function: run_agent
+Query: 'vintage graphic tee under $30'
 
+Selected item: Graphic Tee — 2003 Tour Bootleg Style ($24.0, depop)
+Search results: 10 items
+
+Outfit suggestion:
+Here are two distinct ways to style your new graphic tee using pieces already in your closet:
+
+### 1. The 90s Streetwear Slouch
+* **Items to pair:** Baggy straight-leg jeans (dark wash) + Chunky white sneakers + Black crossbody bag
+* **Why it works:** The slightly boxy fit of the tee mirrors the relaxed volume of the baggy jeans, nailing an effortless, skater-inspired streetwear silhouette. The faded black top and dark indigo wash create a moody, cohesive base, while the chunky white sneakers break up the darkness and tie into the vintage graphic's lighter tones.
+
+### 2. Grunge-Utility Contrast
+* **Items to pair:** Wide-leg khaki trousers + Black combat boots + Vintage black denim jacket (layered over top) + Brown leather belt
+* **Why it works:** This look plays on high-low contrasts by pairing the edgy, worn-in band tee with clean, earthy wide-leg trousers. Tucking the tee in (cinched with the brown belt) defines your waist against the voluminous pants, while the cropped black denim jacket and combat boots anchor the outfit in heavy grunge textures.
+
+Fit card:
+Scored this sick 2003 tour bootleg graphic tee on Depop for just $24, and it instantly became my favorite piece. I'm leaning into total grunge streetwear today by pairing the faded vintage cut with baggy dark wash jeans and chunky sneakers. Thrift magic is real.
+
+
+=== Criterion 2: impossible query stops before second tool (Try 1) ===
+File: agent.py :: Function: run_agent (via _format_no_results_message)
+Query: 'designer ballgown size XXS under $5'
+
+stopped early: yes — No thrift listings matched 'designer ballgown'. Try raising your price ceiling above $5, checking adjacent sizes instead of 'XXS' or using broader keywords (e.g. searching for 'jacket' or 'tee' instead of specific styles).
+selected_item: (none)
+search_results: 0
+
+Trace:
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: [] (empty)
+      →    empty, stopping
+
+
+=== Criterion 3: session preserves selected item across calls (Try 1) ===
+File: agent.py :: Function: run_agent
+Query: 'denim jacket under $50'
+
+selected_item['id']: 'lst_007' ('Denim Jacket — Light Wash, Cropped', $42.0, poshmark)
+suggest_outfit argument new_item['id']: 'lst_007'
+create_fit_card argument new_item['id']: 'lst_007'
+
+Trace:
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 7 items: Denim Jacket — Light Wash, Cropped, High-Waisted Denim Shorts — Cutoff, Denim Vest — Medium Wash, Studded … +4 more
+[2] suggest_outfit
+      in:  dict with keys: item, wardrobe_items
+      out: Here are two distinct, effortlessly cool ways to style your new light wash cropped denim jacket using pieces s…
+[3] create_fit_card
+      in:  dict with keys: item, price, platform
+      out: Found this light wash cropped denim jacket on Poshmark for just $42 and honestly, it's the ultimate streetwear…
+
+
+=== Criterion 4: fit card includes price, platform, and proper length (Try 1) ===
+File: tools.py :: Function: create_fit_card
+Query: 'silk slip dress in midi length under $40'
+
+Fit card:
+Scored this gorgeous 90s floral silk slip dress on depop for just $30 and I am completely obsessed. I’ve been styling it with chunky combat boots and an oversized crewneck for that perfect grunge-chic look, but it’s just as cute layered over a baby tee with sneakers. It’s giving the ultimate vintage cottagecore meets streetwear energy.
+
+Verification:
+- Price: '$30' present
+- Platform: 'depop' present
+- Sentence count: 3 sentences (meets 2-4 sentence requirement)
+
+
+=== Criterion 5: search strictly respects price ceilings (Try 1) ===
+File: tools.py :: Function: search_listings (via MCP)
+Query: 'vintage graphic tee under $25'
+
+Price ceiling: $25.0
+Selected item: 'Graphic Tee — 2003 Tour Bootleg Style'
+Selected item price: $24.0 (satisfies price <= 25.0)
+All 10 search results returned had prices <= $25.0:
+- lst_006: $24.0
+- lst_033: $19.0
+- lst_002: $18.0
+- lst_012: $20.0
+- lst_017: $15.0
+- lst_027: $22.0
+- lst_022: $18.0
+- lst_030: $16.0
+- lst_025: $14.0
+- lst_035: $22.0
 ```
 
 ---
