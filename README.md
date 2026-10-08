@@ -158,6 +158,12 @@ Scored these vintage Levi's 501 jeans on depop for just $38 and I am never takin
 - *What came back:* The AI generated a broad marketing prompt that produced promotional brand ad copy ("Introducing the iconic Levi 501s...") cluttered with hashtags (`#vintage #ootd`) and wrapped in quotation marks.
 - *What I changed:* I revised the prompt with strict structural rules: explicitly ban hashtags and quotation marks, mandate an authentic personal social posting voice (like an Instagram or TikTok fit check), require mentioning the platform and exact price formatted with a dollar sign, and restrict length strictly to between 2 and 4 sentences so it consistently meets our acceptance criteria.
 
+**Moment 3 (Unit 4)**
+
+- *What I asked for:* In Unit 4, I asked the AI to critique our failure messages from an end-user perspective and suggest prompt constraints to prevent repetitive fit card openings.
+- *What came back:* The AI identified that the model was defaulting to identical opening templates (*"Scored this..."*) across every run, and recommended negative prompting combined with grounding rules.
+- *What I changed:* Rather than hardcoding string templates, I added negative constraints prohibiting formulaic openings (*"do NOT start with formulaic openings like 'Scored this...' or 'Found this...'"*) and mandated referencing specific closet pieces from `outfit_suggestion`. This preserved natural conversational variety while ensuring verifiable wardrobe synthesis.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
@@ -418,41 +424,45 @@ Yes, it significantly improved caption variety and wardrobe grounding:
 
 ## What's Still Broken
 
-<!-- For each criterion still missed: what you'd do, and why you stopped where
-     you did. "I ran out of time" is fine if it's true. Pretending nothing is
-     left is not. -->
+- **Criterion 3: Upstream model availability during un-cached evaluation (Missed 3/5 vs. Target 5/5)**
+  - *What broke:* In the un-cached post-improvement evaluation run (`run_eval.py --label after`), Tries 3 and 4 were cut short when the Google Gemini service returned an upstream `503 UNAVAILABLE` spike (*"This model is currently experiencing high demand"*). The agent's error handling caught the exception cleanly and stopped without crashing, but because the session halted before `create_fit_card`, the selected item could not be passed through all three tools on those two tries.
+  - *What I'd do:* Update `generate.py` with expanded retry policies specifically tailored for HTTP 503 / high-demand surges (e.g., randomized exponential jitter, higher retry thresholds, or automatic graceful fallback to a secondary lightweight model).
+  - *Why I stopped here:* Unit 4 strictly enforces making only one single improvement between the before and after runs. My improvement was intentionally focused on prompt grounding and opening variety in `tools.py::create_fit_card`. Changing network retry logic in `generate.py` would represent a second architectural change, muddying the measurement.
 
-
+- **Criterion 4: Informal price tokenization edge cases (Met 4/5 vs. Target 4/5)**
+  - *What broke:* On Try 5 of the after run, the model wrote *"thirty bucks"* rather than the explicitly required dollar sign token (*"$30"*).
+  - *What I'd do:* Add a lightweight deterministic post-processing step in `create_fit_card` that scans the output for `f"${int(price)}"` or `f"${price:.2f}"` and injects the formatted price if the model used slang words.
+  - *Why I stopped here:* The prompt adjustment successfully met our target of 4 of 5 passes while completely solving the severe problem of repetitive *"Scored this..."* clichés and missing wardrobe pieces. Adding extra post-processing code would be an unnecessary second modification.
 
 <!-- ═════════════════════════════════════════════════════════════════════
 
      SUBMISSION CHECKLIST — unit 3
 
-       [ ] criteria.md has five numbered criteria, each with a target
-       [ ] Each criterion has a reason underneath it
-       [ ] All five unit 3 sections above have real content
-       [ ] Tool Inventory: all three tools, inputs WITH TYPES, a specific
+       [x] criteria.md has five numbered criteria, each with a target
+       [x] Each criterion has a reason underneath it
+       [x] All five unit 3 sections above have real content
+       [x] Tool Inventory: all three tools, inputs WITH TYPES, a specific
            return value, and the empty case
-       [ ] Planning Loop names the branch rule and agent.py::run_agent
-       [ ] Sample Run: one full query plus the three per-tool tests, as text
-       [ ] At least four new commits
-       [ ] Repository URL submitted — WRITE IT DOWN, you submit the same one
+       [x] Planning Loop names the branch rule and agent.py::run_agent
+       [x] Sample Run: one full query plus the three per-tool tests, as text
+       [x] At least four new commits
+       [x] Repository URL submitted — WRITE IT DOWN, you submit the same one
            next unit
 
      SUBMISSION CHECKLIST — unit 4
 
-       [ ] mcp_server.py exists with one tool registered
+       [x] mcp_server.py exists with one tool registered
            (or a written record of exactly where the rewire broke)
-       [ ] Run Log — Before, five criteria, five tries each
-       [ ] Real output pasted underneath, naming file and function
-       [ ] A verdict on every criterion
-       [ ] A diagnosis for every miss, naming a place AND a mechanism
-       [ ] Loop Trace, with the MCP call visible in it
-       [ ] All three failure modes triggered and handled
-       [ ] One improvement, with Run Log — After in the same format
-       [ ] What's Still Broken
-       [ ] At least four new commits
-       [ ] The SAME repository URL as last unit
+       [x] Run Log — Before, five criteria, five tries each
+       [x] Real output pasted underneath, naming file and function
+       [x] A verdict on every criterion
+       [x] A diagnosis for every miss, naming a place AND a mechanism
+       [x] Loop Trace, with the MCP call visible in it
+       [x] All three failure modes triggered and handled
+       [x] One improvement, with Run Log — After in the same format
+       [x] What's Still Broken
+       [x] At least four new commits
+       [x] The SAME repository URL as last unit
 
      Do not delete and recreate this repository. Your commit history is what
      shows your criteria existed before your results did.
