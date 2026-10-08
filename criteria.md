@@ -55,6 +55,10 @@ In at least 4 of 5 successful runs, the generated fit card contains both the lis
 **Why this target:**
 `create_fit_card` calls an LLM with temperature 0.9 to generate natural, creative captions rather than rigid templates. While the prompt explicitly instructs the model to include the price, platform, and write 2–4 sentences, high-temperature generation can occasionally produce a single-sentence punchline or omit a token. Setting 4 of 5 allows for natural LLM phrasing variance while enforcing consistent quality.
 
+> **Revised in unit 4:** In at least 4 of 5 successful runs across different items, the generated fit card contains the listing's price (formatted with a dollar sign), the platform name, is between 2 and 4 sentences long, and explicitly names at least one specific wardrobe item from the user's closet mentioned in the styling suggestion.
+>
+> **Why revised:** The original criterion measured surface formatting tokens (price, platform, length) but failed to measure semantic wardrobe grounding. As diagnosed in Milestone 4, the model passed with formulaic opening clichés ("Scored this...") and generic praise without actually integrating closet pieces. The revised criterion requires verified closet synthesis.
+
 ---
 
 ## 5. Search strictly respects price ceilings
